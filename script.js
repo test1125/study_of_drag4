@@ -17,41 +17,63 @@ function mouseUp() {
 function mouseMove(e) {
     if(target){
         // console.log("mouseMove");
-        target.style.left = e.clientX-gapX + "px";
-        target.style.top = e.clientY-gapY + "px";
-        if(e.target.tagName == "LI"){
-            let hitTop = e.target.getBoundingClientRect().top;
-            let hitBottom = e.target.getBoundingClientRect().bottom;
+        let cursorX = null;
+        let cursorY = null;
+        let hit = null;
+
+        if(e.type == "mousemove"){
+            cursorX = e.clientX;
+            cursorY = e.clientY;
+            hit = e.target;
+            target.style.left = cursorX - gapX + "px";
+            target.style.top = cursorY - gapY + "px";
+        }
+        else if(e.type == "touchmove"){
+            cursorX = e.touches[0].clientX;
+            cursorY = e.touches[0].clientY;
+
+            //タッチによるドラッグではpointer-events: noneは機能しない
+            hit = document.elementFromPoint(cursorX, cursorY);
+
+            target.style.left = cursorX - gapX + "px";
+            target.style.top = cursorY - gapY + "px";
+        }
+
+        if(hit.tagName == "LI"){
+            let hitTop = hit.getBoundingClientRect().top;
+            let hitBottom = hit.getBoundingClientRect().bottom;
             let hitMiddle = hitTop + (hitBottom - hitTop) / 2;
 
-            if(e.clientY < hitMiddle){
+            if(cursorY < hitMiddle){
                 if(document.querySelector(".space")){
                     document.querySelectorAll(".space").forEach(elm => {
                         elm.remove();
                     })
                 }
                 // console.log("hit Top");
-                e.target.insertAdjacentHTML("afterend", '<div class="space">ここに挿入</div>');
+                hit.insertAdjacentHTML("afterend", '<div class="space">ここに挿入</div>');
             }
-            else if (e.clientY > hitMiddle){
+            else if (cursorY > hitMiddle){
                 if(document.querySelector(".space")){
                     document.querySelectorAll(".space").forEach(elm => {
                         elm.remove();
                     })
                 }
                 // console.log("hit bottom");
-                e.target.insertAdjacentHTML("beforebegin", '<div class="space">ここに挿入</div>');
+                hit.insertAdjacentHTML("beforebegin", '<div class="space">ここに挿入</div>');
             }
         }
     }
 }
 
-document.addEventListener("mousedown", e=> {
+function mouseDown(e) {
     if(e.target.tagName != "LI" || e.target.className == "dummy"){
         return;
     }
+
     // console.log("mouseDown");
     target = e.target;
+
     //mouseoverにdragoverの役割をさせるため
     target.style.pointerEvents ="none";
 
@@ -65,12 +87,25 @@ document.addEventListener("mousedown", e=> {
     
     elmX = target.getBoundingClientRect().left;
     elmY = target.getBoundingClientRect().top;
-    gapX = e.clientX - elmX;
-    gapY = e.clientY - elmY;
 
-    
-    target.style.left = elmX + "px";
-    target.style.top = elmY + "px";
+    if(e.type == "mousedown"){
+        gapX = e.clientX - elmX;
+        gapY = e.clientY - elmY;
+    }
+    else if (e.type == "touchstart"){
+        gapX = e.touches[0].clientX - elmX;
+        gapY = e.touches[0].clientY - elmY;  
+    }
+
+    //PC
     document.addEventListener('mousemove', mouseMove);
     document.addEventListener('mouseup', mouseUp);
-})
+
+    //スマホ
+    document.addEventListener('touchmove', mouseMove);
+    document.addEventListener('touchend', mouseUp);
+}
+
+
+document.addEventListener('mousedown', mouseDown);
+document.addEventListener('touchstart', mouseDown);
